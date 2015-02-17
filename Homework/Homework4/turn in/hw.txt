@@ -1,0 +1,17 @@
+Gautam Gupta
+***REMOVED***
+
+Problem 2:
+The compilation error occurs because the 'insert' function calls a series of functions which includes the 'find' function. The 'find' function has a comparison between two KeyTypes; in the case of the Coord class, there is no defined operator to make the '!=' comparison requested by 'find'. Without defining a function as 'bool operator!=(const Coord& lhs, const Coord& rhs)' there is no valid function to make the comparison. 
+
+Problem 3b:
+The function could not be written with only one parameter as the recursive call requires the current instance of the function to know both which object is currently being acted on AND what the path followed thus far is.
+
+
+Problem 4:
+a) This problem is O(N^3) worst case because it has three nested loops of operations, each running from 0 to N.
+b) This problem is still O(N^3) because the bound of the second loop, i, can still reach a value of N in the worst case situation; therefore, though this algorithm is faster for a large N, it is still about 8x the work for twice the input data
+
+Problem 5:
+This problem is O(N^2) because it contains a for loop from 0 to N-1, which internally calls get() and either insert() or erase(). All three functions call find(), which visits all N elements of the map. The problem uses roughly N*(N+N) instructions, which comes out to O(N^2) after dropping coefficients.
+

@@ -1,0 +1,29 @@
+Problem 2:
+1: (6,4)
+2: (6,5)
+3: (7,5)
+4: (8,5)
+5: (8,6)
+6: (8,7)
+7: (8,8)
+8: (7,8)
+9: (6,6)
+10: (5,4)
+11: (4,4)
+
+Problem 3:
+1: (6,4)
+2: (5,4)
+3: (6,5)
+4: (4,4)
+5: (6,6)
+6: (7,5)
+7: (3,4)
+8: (4,5)
+9: (8,5)
+10: (2,4)
+11: (4,6)
+
+The depth-first Stack search follows a path until it has no more possible solutions (and is not the end of the path)--it then pops the next coordinate off the stack and continues this same pattern of searching until the end of the path. The coordinate popped off the stack is the last coordinate pushed on-- so it will always continue down the same path until it cannot.
+
+The breadth-first Queue search instead increases breadth before exploring depth, so to speak. Instead of following a path till the end, it first branches out in every direction possible from the starting point (and pushes viable coordinates into the queue). It will then explore the front coordinate (and pop it out), and run the same branching algorithm, storing any possible routes in the queue. The next coordinate popped will not be deepening this last path; rather, it will be exploring another branch of the initial search.

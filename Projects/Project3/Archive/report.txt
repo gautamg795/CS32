@@ -1,0 +1,194 @@
+Project 3 Report - Gautam Gupta #***REMOVED***
+
+1) Description of Public Member Functions:
+
+StudentWorld.cpp:
+	StudentWorld(); // Initializes the m_level pointer to nullptr, and clears the m_actors list
+	~StudentWorld(); // Deletes all actors pointed to in the m_actors list; deletes the level and player
+	virtual int init(); // Loads the level, creates the Actors, and initializes the level bonus
+	virtual int move(); // Calls all Actors' doSomething(), checks to see if the Player has died, removes dead Actors,
+						 // updates the bonus score, checks if the Player won, and returns the appropriate value.
+	virtual void cleanUp(); // Deletes all actors pointed to in the m_actors list; deletes the level and player
+	void addActor(Actor* ap); // Adds the Actor pointed to by ap to m_actors; uses push_front so an Actor added mid-tick 
+								// will not have its doSomething method called
+	int whatObjectIsThis(Actor* ap) const; // returns the IID of the Actor pointed to by ap 
+										// (uses dynamic_cast, not getID() so it is allowed within spec)
+	void removeDeadActors(); // If an Actor is dead, delete the Actor and erase its pointer from m_actors
+	void killPlayer(); // Sets the Player's m_dead to true (this can be used by other Actors through their getWorld() function)
+	void applyBugspray(int x, int y); // Applies bugspray to any Actors at (x,y). Does not need to be virtual 
+									  // as no Actor is derived from StudentWorld. Actors that can be effected by bugspray each
+									  // have their own case hard coded in
+	std::string formatText(); // Formats the game status text and returns it for use in setGameStatText()
+	void sprayerSprayed(); // Informs the Player that one of its Bugsprayer has exploded 
+							//(used to make sure Player can only deploy a certain number of Bugsprayers)
+	void zumiDied(); // Used to increment the count of Zumis that have died so far
+						//this is used to determine when the level is finished
+	Actor* spotContains(int ID, int x, int y) const; // Returns a pointer to an Actor if that Actor with the requested
+													// ID and (x,y) exists. Uses whatObjectIsThis(). Else returns nullptr
+	bool didPlayerWin() const; // Checks if the Player is currently standing on the Exit 
+								//(this function is only called once the Player has killed all Zumis)
+	bool killedAll() const; // Checks if the Player has killed all Zumis in the level. Uses two integer data members
+							// one that counts the Zumis in the level and one that counts the Zumis killed.
+	bool shouldPlayerDie() const; // Checks the Player's (x,y) vs the (x,y) of all "dangerous" Actors to determine 
+					//if the Player should die. If the Player cannot walk thru walls, Destructible Bricks are also checked. 
+	int whichGoodie() const; // If a Goodie is to be dropped, returns the ID of which one
+	int getPlayerX() const; // Returns the player's X position
+	int getPlayerY() const; // Returns the player's Y position
+
+	// I also have 11 "level info getters" which simply ask m_level's getOptionValue for a specific option value.
+
+
+Actor.cpp:
+struct Timer // Used by objects that have a timed lifetime or must do something after a certain amount of time
+{
+	Timer(int t) // Initializes the Timer with time t
+    void tick() // Decrements m_time
+    void dieNow() // Sets m_time to 0
+    bool expired() // Returns if m_time == 0
+    void resetTime(int t) // Resets m_time to t
+};
+
+class Actor : public GraphObject
+{
+	Actor(int IID, int sx, int sy, StudentWorld* sw); // Initializes the Actor and GraphObject appropriately
+    virtual ~Actor(); // Sets the GraphObject's visiblity to false
+    bool isDead() const; // Returns true if the Actor is dead
+    virtual void setDead(); // Sets the Actor to dead. Virtual because some Actors (ie Zumis) do more when they die. 
+    virtual void doSomething() = 0; // Does...something. Pure virtual for two reasons
+    								// 1) Makes Actors abstract 2) Ensures that I give every subclass the ability to do something
+    StudentWorld* getWorld() const; // Returns the m_world pointer. Not virtual because this is never overridden
+    virtual bool canMoveHere(int dir, bool d = false) const; // Returns whether or not an actor can move in direction dir due to presence of a block. 
+    												 // Virtual so it can be overridden when player can walk thru walls.
+    												 // When bool d is true, destructible bricks can be moved onto. Reasoning for this is below.
+};
+
+class Player : public Actor // No functions are virtual as no classes are derived from the Player
+{
+	// Housekeeping
+    Player(int sx, int sy, StudentWorld* sw); // Initializes the Player and Actor appropriately
+    ~Player() // Does nothing
+    // Accessors
+    int getCapacity() const; // Returns how many sprayers the Player can drop
+    int getSprayersDropped() const; // Returns how many sprayers the Player has dropped
+    bool getWalkThroughWalls() const; // Returns whether or not the Player can walk through walls
+    bool canMoveHere(int dir) const; // When the Player can walk thru walls, Actor::canMoveHere is called with bool d = true. 
+    								// I chose to call Actor::canMoveHere with this boolean flag system to prevent duplicating code
+    // Mutators
+    void setWalkThroughWalls(bool b); // Sets the Player's ability to walk through walls to 'b'
+    void setBoostedSprayer(bool b); // Sets the Player's boosted spray bool to 'b'
+    void doSomething(); // Moves as per getKey() if a key was pressed and the player can move there per canMoveHere().
+    					// Manages the Player's Timer objects for the Player's ability to walk thru walls and boosted spray capacity.
+    void dropSprayerIfPossible(int x, int y); //If a sprayer can be dropped, it will be (checks current sprayers dropped vs capacity)
+    void sprayerDied(); // Decrements the number of sprayers the Player currently has in the level
+};
+
+class dBrick : public Brick
+{
+
+    virtual void doSomething(); // Contemplates life as a dbrick (does nothing)
+};
+
+class pBrick : public Brick
+{
+    virtual void doSomething(); // Contemplates life as a dbrick (does nothing)
+    							// This method was not declared in Brick as to keep the Brick base class abstract 
+};
+
+class exit : public Actor
+{
+    virtual void doSomething(); // uses StudentWorld::killedAll() to determine if the Exit should make itself visible
+};
+
+class Zumi : public Actor
+{
+public:
+	virtual ~Zumi(); // Does nothing
+    void doSomething(); // Contains the Zumi functions common to both types of Zumi: Checks if the Zumi is dead, 
+    					// checks if the Player should be dead, and checks if the Zumi should move this tick (and moves if so)
+    bool doesZumiMove(); // Used by Zumi::doSomething to determine if it should move during this tick
+    virtual void setDead(); // The general actions done by both Zumis when dying--use Actor::setDead, play the correct sound, 
+    						// then check if a Goodie should be dropped (and which one, if so). Function is virtual because
+    						// each Zumi calls Zumi::setDead in their own setDead(), then increases the score by the respective amount.
+    virtual void move(); // Contains the simple Zumi's move, which selects a random direction and moves as per the spec. Virtual because
+    					 // cZumi::move() overrides this, but falls back to Zumi::move() when the Player cannot be "smelled" or reached.
+};
+
+class sZumi : public Zumi // simple Zumi
+{
+    void setDead(); // Uses Zumi::setDead(), then increases the score by 100 points
+};
+
+class cZumi : public Zumi // Complex Zumi
+{
+    virtual void move(); // If the Player is within search distance as per smell(), move in the direction indicated by search(). If search() returns -1 or if,
+    					 // the player is not in range, call Zumi::move and return
+    void setDead(); // Calls Zumi::setDead() then increases the score by 500 pints
+    bool smell(); // Calculates the x and y distance to the Player, and returns true if the maximum of these distances > searchDistance
+    int search(); // Using stepsToSolve(), this function determines two things for each of the four directions: 1) Can the player be reached by
+    			  // moving in this direction? If so, would it take less steps than any of the other directions we can walk in? Returns the direction
+				  // that has the least steps, or -1 if no direction reaches the player. 
+    bool stepsToSolve(Coord s, Coord orig, Coord f, int& steps); // Generates a text-based representation of the current level state, then executes a breadth-first search
+    															 // through this representation using a std::queue as per Homework 2 to find the player. A counter variable (int& steps) is
+    															 // incremented every time the queue is popped, representing the steps taken. Returns true if the path exists and vice versa
+};
+
+class TimedLifeActor : public Actor
+{
+    virtual void doSomething() = 0; // Pure virtual because all direct children of TimedLifeActors must do something different in a tick
+    bool timeToDie(); // Checks if the TimedLifeActor's timer has expired; if so return true. Else, decrement the timer and return false
+    void noTime(); // Tell the TimedLifeActor's timer that it has expired
+    virtual ~TimedLifeActor() // Does nothing
+};
+
+class Goodie : public TimedLifeActor
+{
+    void doSomething(); // Monitors if the Goodie should die via TimedLifeActor::timeToDie(). Determines if a Player is standing on the samy (x,y) as the Goodie via StudentWorld::spotContains()
+    							// If so, the correct action is taken depending on what kind of goodie *this is pointing at (determined via StudentWorld::whatObjectIsThis(this) )
+};
+
+class bugSpray : public TimedLifeActor
+{
+    void doSomething(); // Monitors if the bugSpray should die via TimedLifeActor::timeToDie(). Calls StudentWorld::applyBugspray(int x, int y) on its own (x,y). 
+};
+
+class bugSprayer : public TimedLifeActor
+{
+    void doSomething(); // Monitors if the bugSprayer should die via TimdLifeActor::timeToDie. If so, call bugSprayer::spray() and StudentWorld::sprayerSprayed(). 
+    					//Set the object to dead, and play a sound.
+    void spray(); // Uses 4 for loops to spray in the +x, -x, +y, and -y directions. Checks if the block at +/- 1 is a permanent brick. If so, break. If it is a destructible brick, 
+    			  // bugSpray is created at that position then the loop breaks. If neither objects are present, bugSpray is created and the loop continues until its end condition.
+};
+
+
+--------------------------------------------------------------------------
+
+2) Functionality not finished
+As far as I am aware, all functionality has been implemented with no errors when compared to the sample program. 
+
+--------------------------------------------------------------------------
+
+3) Design decisions / assumptions
+	-I was not sure how to handle Actors created mid-tick--should their doSomething be called? And if it is called, does that count as one tick of their lifetimes? I decided after studying the sample program that doSomething() should not be called in the creation tick; and that doSomething() should be called exactly as many times as there are ticks in the Actor's lifetime.
+	-Some bad design decisions I made: While writing this project, I would occasionally realize that a singular function could be written to replace a roundabout method I had written. I would usually write this helper function and use it from then on, but I was generally too lazy to go back and rewrite my previous code to use this helper function. Therefore, there are some design inconsistencies in my code.
+--------------------------------------------------------------------------
+ 4) Class Testing
+
+Player:
+	I tested the Player by making sure it generally obeyed the rules of the game: it could move around freely but could not walk into either kind of Brick during normal circumstances. I made sure that the Player could only drop as many Bugsprayers as its current capacity dictated, and that a boosted capacity only lasted for a set amount of time. I made sure the Player _could_ walk through destructible bricks when the appropriate Goodie was acquired, and I ensured that the ability went away after some time, and that a Player currently standing on a Destructible Brick at the time this ability turned off would be killed. I tested that the Player would be killed by sharing a location with Bugspray or either kind of Zumi, and that dying decremented the number of lives. 
+dBrick: //Destructible Brick
+	I tested the dBricks by ensuring that they could be destroyed by Bugspray, and that they impeded movement of all Actors except for a Player with the ability to walk through walls. I made sure that they would not allow bugSprayers to be dropped on top of them (when a Player can stand there). 
+pBrick: // Permanent Brick
+	I tested the pBricks by simply ensuring that under no circumstances, pBricks would ever be destroyed or allow any other Actor to be on top of them. A pBrick has no other functionality to test.
+exit: 
+	I tested the Exit class by making sure that it would only call its setVisible function once all Zumis have been killed by the Player. It should only call that function once, and play the correct sound once. I also made sure that the next level would not be triggered until the Player was standing on the same (x,y) as the exit, at which point it would communicate to the StudentWorld that it can proceed to the next level
+sZumi: // Simple Zumi
+	I tested the Simple Zumi by ensuring that it randomly selects a new direction to start moving in every game. It only selects a new direction (with a call to randInt) when it is no longer possible to continue in the previously selected direction. I checked that the Simple Zumi treated a Bugsprayer the same as a Brick--it would stop, select a new direction, and only move in the next tick in which it may move (it will not move in the same tick that it reselects a new direction). I tested that the Simple Zumi wouild be killed by occuping the same space as Bugspray, and that it would notify the Player of its death if it occupies the same spot as a Player
+cZumi: // Complex Zumi
+	I tested the Complex Zumi by first checking that the Zumi acts as a Simple Zumi when either the Player is out of "smell range" and reachable, and when the Player is in "smell range" but not reachable. I then set the cZumi's search distance to a high value, and then checked that the cZumi will only aggressively seek out the Player when a path does exist. Using the map layout in level02.dat, I was able to check that the cZumi does indeed take the shortest path possible to the Player when multiple paths are possible. I also used breakpoints in the cZumi's search function to check that the shortest path was being chosen every time. In addition, I used the same tests used in sZumi regarding death and killing other objects.
+Goodie: // General testing for all three Goodies
+	I tested the Goodie's probability functions by systematically editing the Level data to different probabilities and ensuring that Goodies always showed up when the probability of a Goodie appearing was 100%. I did the same process with the differrent types of Goodies. I tested that a Goodie (which is a TimedLifeActor) only lasted onscreen for as many ticks as the Level data specified. I also checked that when a Player stands on top of the Goodie, an action specific to the type of Goodie is carried out on the Player (but only for the time specified). 
+bugSpray: 
+	Tested to make sure that the bugSpray is calling applyBugspray exactly 3 times and no more (went tick by tick in the game to verify this). I had to ensure that all Actors that could be affected by bugSpray were in fact being affected. This includes setting off other bugSprayers using this bugSpray object--I had to again go tick by tick to check this. I also tested that the bugSpray lasted only 3 ticks (and that it called doSomething during each tick)
+bugSprayer:
+	I had to ensure that the bugSprayer correctly notified the StudentWorld when it had "sprayed" -- this is to ensure that the Player always knows whether or not it can drop another bugSprayer. Additionally, I had to extensively test the bugSprayer's spray() method to ensure that the "cross pattern" was made, but only up to and including Destructible Bricks and not including Permanent Bricks. I had to make sure the bugSprayer only lasted for the lifetime specified; I counted the ticks in my game to make sure this was true.
+

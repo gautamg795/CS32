@@ -1,0 +1,28 @@
+probOfGoodieOverall=15 
+probOfExtraLifeGoodie=50 
+probOfWalkThruGoodie=40 
+probOfMoreSprayersGoodie=10 
+ticksPerSimpleZumiMove=3 
+ticksPerComplexZumiMove=3 
+goodieLifetimeInTicks=30 
+levelBonus=2000
+walkThruLifetimeTicks=100
+boostedSprayerLifetimeTicks=100
+maxBoostedSprayers=6
+complexZumiSearchDistance=4
+
+###############
+# * e*   *  * #
+#s*  * s *  *s#
+# *  *   *@ * #
+# *  *   *  * #
+# **** # **** #
+#             #
+#*****# #*****#
+#  c * # * c  #
+#** **# #** **#
+#     * *     #
+#    *   *    #
+#     *c*     #
+#             #
+###############

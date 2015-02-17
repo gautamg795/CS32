@@ -1,0 +1,209 @@
+Gautam Gupta - ***REMOVED***
+Project 2 Report
+Winter 2014
+
+
+1) My linked list is implemented as a circular doubly-linked list with the m_head member always pointing at a dummy node. (The dummy node is no different from another node, except that I do not initialize it with any data, and I do not attempt to access its data members at any point.) An empty, newly-created Map object has a m_head pointer object, and a m_size integer variable initialized to 0. The pointer is set to point at a dynamically allocated Node object. Node objects have four data members: m_key, m_value (the actual map data) and two Node* pointers m_next and m_prev. The empty Map has the single dummy node whose m_next and m_prev pointers are both set to m_head to create the circular structure. New nodes are inserted "next to" or "after" the dummy node——the m_next of the dummy node will point to a newly inserted node, and any existing nodes will be "pushed back." 
+Empty Map:
+
+     head
+    +-------+
+ +--+---+   |
+ |  +-------+
+ |
+ |   dummy
+ |  +-------+
+ +->| ???   |m_key
+ ^  +-------+
+ |  | ???   |m_value
+ |  +-------+
+ +<-|m_next |
+ |  +-------+
+ +<-|m_prev |
+    +-------+
+
+ Typical Map:
+
+     head
+    +-------+
+ +-<|---+---|<------------------------------------------------------------+
+ |  +-------+                                                              |
+ |                                                                         |
+ |   dummy                 +-->node1             +--->node2                |
+ |  +-------+              |  +-------+          |   +-------+             |
+ +->| ???   |m_key         |  | "k1"  |m_key     |   | "k2"  |m_key        |
+    +-------+              |  +-------+          |   +-------+             |
+    | ???   |m_value       |  | one   |m_value   |   | two   |m_value      |
+    +-------+              |  +-------+          |   +-------+             |
+    |m_next |>-------------+  |m_next |>---------+   | m_next|>------------+
+    +-------+                 +-------+              +-------+
+ +-<|m_prev |<---------------<| m_prev|<------------<| m_prev|
+ |  +-------+                 +-------+              +-------+
+ |                                                        ^
+ |                                                        |
+ |                                                        |
+ +--------------------------------------------------------+
+
+
+ 2) Psuedocode for non-trivial algorithms
+
+ Map::Node* Map::keyExists(KeyType key) const // Helper program I used
+ {
+ 	if map size == 0
+ 		return nullptr;
+	set a pointer to the dummy node;
+	do once and until the pointer points at the dummy node again
+	{
+		move the pointer to the next node;
+		check if this node matches the key parameter
+			if so, break;
+	}
+	if a match was found, return the pointer to the matching node;
+	else return nullptr;
+ }
+
+bool Map::erase(const KeyType& key)
+{
+	search for 'key' using keyExists and store a pointer to it;
+	if this pointer is nullptr or if the map size is 0, return false;
+	set the previous node's m_next to the pointer's m_next;
+	set the next node's m_previous to the pointer's m_prev;
+	delete the object pointed to by the pointer;
+	decrement the map size;
+	return true; 
+}
+
+bool combine(const Map& m1, const Map& m2, Map& result)
+{
+	if m1 and m2 refer to the same map
+		set result equal to m1 and return true;
+	create a temporary Map for holding the results of combination; // So potential aliasing does not destroy m1
+	create a boolean that determines what we will return (default true);
+
+	step through m1 with m1.size() steps
+		use get() to store the i'th node's key and value in respective variables;
+		if m2 does not contain this key
+			insert it into the temporary map;
+		if m2 does contain this key
+			use get() to check if it holds the same value;
+				if so, insert the key into the temporary map
+				if not, set the return boolean to false and continue;
+
+	step through m2 with m2.size() steps
+		use get() to store the i'th node's key and value in respective variables;
+		if m1 does not contain the current key
+			insert it into the temporary map;
+
+	set result equal to the temporary map using the = operator;
+	return the boolean variable;
+}
+
+void subtract(const Map& m1, const Map& m2, Map& result)
+{
+	if m1 and m2 refer to the same map
+		set result equal to an empty map and return true;
+	create a temporary Map for holding the results of combination; // So potential aliasing does not destroy m1
+	set the temporary map equal to m1 using the = operator;
+	step through m2 with m2.size() steps
+		use get() to store the i'th node's key and value into respective variables;
+		if the key obtained from m2.get() matches something in the temporary map
+			remove it from the temporary map using erase();
+	set result equal to the temporary map using the = operator;
+	return;
+}
+
+3) Test cases
+Map m1;
+assert(m1.size() == 0); // Test the constructor and size()
+assert(m1.empty()); // Test empty()
+assert(!m1.contains("testKey")); // Test contains()
+assert(m1.insert("testKey", 0)); // insert() should return true
+KeyType k1;
+ValueType v1;
+assert(!m1.insert("testKey", 0)); // insert() should return false on duplicate
+assert(m1.get("testKey", v1)); // test two-argument get()
+assert(v1 == 0); // get(), continued
+assert(m1.size() == 1); // size() updates correctly
+assert(m1.update("testKey", 10)); // test update()
+assert(m1.get("testKey", v1)); // get updated value
+assert(v1 == 10); // check updated value
+Map m8(m1); // copy constructor
+assert(!m8.insert("testKey", 0)); // ensure duplication still fails (copy constructor works)
+assert(m8.get("testKey", v1)); // more copy constructor testing
+assert(v1 == 10); // more copy constructor testing
+v1 = 0;
+assert(m1.get(0, k1, v1)); // test three-argument get()
+assert(k1 == "testKey" && v1 == 10); // get(), continued
+assert(!m1.get(1, k1, v1)); // get(), continued
+assert(m1.insertOrUpdate("Key2", 1)); // test insertOrUpdate()
+assert(m1.size() == 2); // test that insertion happened
+assert(m1.contains("testKey") && m1.contains("Key2")); // test insertion
+assert(m1.insertOrUpdate("Key2", 100)); // try updating
+assert(m1.get("Key2", v1)); // ensure updating worked
+assert(v1 == 100); // continued
+KeyType k2;
+ValueType v2;
+assert(m1.get(0, k1, v1) && m1.get(1, k2, v2)); // more three-argument get
+assert(k1 != k2 && v1 != v2); // different values of i => different keys returned
+assert(!m1.erase("NotExist")); // test erase()
+assert(m1.erase("testKey")); // test erase()
+assert(m1.size() == 1); // size decreases after erase()
+assert(!m1.contains("testKey")); // erasure was succesful
+assert(m1.get(0, k1, v2)); // get with i=0 now refers to the only node
+assert(k1 == "Key2" && v2 == 100); // continued
+assert(!m1.get(1, k1, v1)); // get with i>=size() fails
+assert(m1.insert("Key3", 3) && m1.insert("Key4", 4) && m1.insert("Key5", 5));
+assert(m1.size() == 4);
+Map m2;
+assert(m2.empty()); 
+m1.swap(m2); // test swap with full and empty array
+assert(m1.empty()); // continued
+assert(m2.size() == 4); // continued
+assert(m2.contains("Key3")); // continued
+const Map emptyMap; // will be used to clear maps for other tests
+m1 = emptyMap;
+m2 = emptyMap;
+assert(m1.empty() && m2.empty());
+m1.insert("Fred", 123); // preparation for further tests
+m1.insert("Ethel", 456);
+m1.insert("Lucy", 789);
+m2.insert("Lucy", 789);
+m2.insert("Ricky", 321);
+Map result;
+assert(combine(m1, m2, result)); // test combine()
+assert(result.size() == 4); // continued
+assert(result.contains("Fred") && result.contains("Ricky") && result.contains("Lucy") && result.contains("Ethel")); // continued
+Map m4(m1); // copy constructor
+assert(combine(m4, m2, result)); // combine() should return true
+assert(result.size() == 4); // continued
+assert(result.contains("Fred") && result.contains("Ricky") && result.contains("Lucy") && result.contains("Ethel")); // continued
+m2 = emptyMap;
+m2.insert("Lucy", 654);
+m2.insert("Ricky", 321);
+assert(!combine(m1, m2, result)); // combine() should return false but still run according to spec
+assert(result.size() == 3); // continued
+assert(result.contains("Fred") && result.contains("Ricky") && result.contains("Ethel") && !result.contains("Lucy")); // continued
+result = emptyMap;
+Map& result2 = m1; // create self reference to test for aliasing
+m2 = emptyMap;
+m2.insert("Lucy", 789);
+m2.insert("Ricky", 321);
+m2.insert("Ethel", 654);
+subtract(m1, m2, result2); // test for errors with aliasing in subtract();
+assert(result2.size() == 1); // continued
+assert(result2.contains("Fred")); // continued
+Map original;
+original.insert("one", 1);
+original.insert("two", 2);
+original.insert("three", 3);
+original.swap(original); // swap on self should not error
+assert(original.size() == 3); // continued
+m1 = emptyMap;
+m2 = emptyMap;
+m2.insert("name1", 0);
+m1.insert("name1", 1);
+m1.insert("name2", 2);
+combine(m1, m2, m1); // test combine() for errors with aliasing
+assert(m1.size() == 1);
+assert(!m1.contains("name1"));
+

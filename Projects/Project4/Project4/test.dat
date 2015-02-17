@@ -1,0 +1,5 @@
+file:/Volumes/Data/Users/gautam/Downloads/fn_ln_age_kids_married_ssn_25k.csv
+qparam:Age,050,085
+sparam:LastName,ascending
+sparam:FirstName,ascending
+execute

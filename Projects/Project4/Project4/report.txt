@@ -1,0 +1,52 @@
+Gautam Gupta #***REMOVED***
+Project 4 Report
+
+MultiMap::findEqual(key)
+	This function starts at the root and checks if 'key' is less than or greater than the current TreeNode's key. If less, it proceeds to the left; else it proceeds to the right. If at any point the 'key' does equal the current TreeNode's key, the function returns a valid Iterator to the TreeNode. If a nullptr is reached and the key has not yet been found, an invalid Iterator is returned. Assuming the MultiMap has N associations, the function completes in O(log N) time on average. There are no bugs in this as far as I am aware.
+
+MultiMap::Iterator::next()
+	This function has three possible algorithms to use. First, it checks if the current TreeNode has another ValueNode to the right (essentially, if the current Key has another Value, we go to it). If there are no more values for the current key, we check if we can go to the right child. If so, we go to the right child, then follow the chain of left children until we hit a nullptr. This gives the smallest key still greater than our previous key. If there there is no right child, we rise up the parent tree until we find a parent whose key is greater than our current key. If the parent becomes nullptr, we have hit the root node, and there are no more keys in the tree. If any of the three algorithms were succesful, we return a valid Iterator; else, an invalid Iterator is returned. This function runs in O(1) if we are simply selecting another value; else, it runs in O(log N) time for a tree with N nodes on average. There are no bugs as far as I'm aware.
+
+Database::search()
+	This function is best explained in pseudocode:
+	{
+		if (less than one search criteria)
+			return ERROR_RESULT;
+		create a vector<set<unsigned int> > to hold the resultant sets before they are intersected;
+		for (each search criteria)
+		{
+			Ensure at least a min or a max has been provided;
+			Ensure the field we are searching for exists in the schema;
+			Create a set<unsigned int> to hold the values we find to match the criteria;
+			If (a max value was provided)
+			{
+				use findEqualsOrSuccessor to find an Iterator to the min value;
+				use findEqualsOrPredecessor to find an Iterator to the max value;
+				while(the first iterator does not equal the second and the first iterator is valid)
+				{
+					insert the first iterator's value into the set;
+					increment the first iterator, if possible;
+				}
+				insert the last iterator's value into the set, if it is valid;
+			}
+			else (a max value was not provided)
+			{
+				use findEqualsOrSuccessor to find an Iterator to the min value;
+				while (the first Iterator is valid)
+				{
+					insert the first iterator's value into the set;
+					increment the iterator if possible;
+				}
+			}
+			Push the set into our vector of sets;
+		}
+		Using std::set_intersection, step through the vector of sets and intersect all the sets into a final intersected set;
+		Insert all values of this final set into the results vector;
+		If (there is at least one sort criteria)
+			Use std::sort on the results vector, using my predicate functor which correctly replaces operator< based on all the sort criteria
+		return the size of the results vector;
+	}
+	To determine the number of matching rows in a Database of N rows with M matches to a single criteria, my function takes O(M log N) time.
+	For C criterion and the same parameters as above, my function takes O(CM log N) time.
+	To order R matching rows by S sort criteria, my function takes O(SR log R) time.
+	There are no bugs as far as I'm aware.
